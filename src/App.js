@@ -1,9 +1,16 @@
-import logo from './logo.svg';
 import './App.css';
+import axios from "axios";
+import { UserContextProvider } from './UserContext';
+import Routes from "./Routes";
 
 function App() {
+  axios.defaults.baseURL = 'http://localhost:4000';
+  axios.defaults.withCredentials = true;
+  
   return (
-    <div className="App">test</div>
+    <UserContextProvider>
+      <Routes />
+    </UserContextProvider>
   );
 }
 
