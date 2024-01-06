@@ -83,7 +83,7 @@ export default function Chat(){
                     )}
                     {!!selectedUserId && (
                         <div className="relative h-full">
-                            <div className="overflow-y-scroll absoulte inset-0">
+                            <div className="overflow-y-scroll absolute inset-0">
                                 {messagesWithoutDupes.map(message => (
                                     <div className={(message.sender === id? 'text-right': 'text-left')}>
                                         <div className={"inline-block p-2 my-2 rounded-md text-sm "+(message.sender === id? 'bg-blue-500 text-white':'bg-white text-gray-500')}>
