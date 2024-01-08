@@ -1,7 +1,8 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import Avatar from "./Avatar";
 import Logo from "./Logo";
 import { UserContext } from "./UserContext";
+import axios from "axios";
 const {uniqBy} = require('lodash');
 
 export default function Chat(){
@@ -11,16 +12,27 @@ export default function Chat(){
     const [newMessageText, setNewMessageText] = useState('');
     const [messages, setMessages] = useState([])
     const {username, id} = useContext(UserContext);
+    const divUnderMessages = useRef()
 
     useEffect(()=>{
+        connectToWs();
+    }, []);
+
+    function connectToWs() {
         const ws = new WebSocket('ws://localhost:4040');
         setWs(ws);
         ws.addEventListener('message', handleMessage);
-    }, []);
+        ws.addEventListener('close', () => {
+            setTimeout(() => {
+              console.log('Disconnected. Trying to reconnect.');
+              connectToWs();
+            }, 1000);
+          });
+    }
 
     function handleMessage(e) {
         const messageData = JSON.parse(e.data);
-        console.log({e, messageData});
+        // console.log({e, messageData});
         if('online' in messageData){
             showOnlinePeople(messageData.online);
         }
@@ -48,14 +60,30 @@ export default function Chat(){
             text: newMessageText,
             sender: id,
             recipient: selectedUserId,
-            id: Date.now()
+            _id: Date.now()
         }]));
     }
+
+    useEffect(() => {
+      const div = divUnderMessages.current;
+      if(div) {
+        div.scrollIntoView({behavior: 'smooth', block : 'end'});
+      }
+    }, [messages]);
+
+    useEffect(() => {
+        if (selectedUserId) {
+          axios.get('/messages/'+selectedUserId).then(res => {
+            setMessages(res.data);
+          });
+        }
+      }, [selectedUserId]);
+    
 
     const onlinePeopleExclOurUser = {...onlinePeople};
     delete onlinePeopleExclOurUser[id];
 
-    const messagesWithoutDupes = uniqBy(messages, 'id');
+    const messagesWithoutDupes = uniqBy(messages, '_id');
 
     return (
         <div className="flex h-screen">
@@ -85,14 +113,13 @@ export default function Chat(){
                         <div className="relative h-full">
                             <div className="overflow-y-scroll absolute inset-0">
                                 {messagesWithoutDupes.map(message => (
-                                    <div className={(message.sender === id? 'text-right': 'text-left')}>
+                                    <div key={message._id} className={(message.sender === id? 'text-right': 'text-left')}>
                                         <div className={"inline-block p-2 my-2 rounded-md text-sm "+(message.sender === id? 'bg-blue-500 text-white':'bg-white text-gray-500')}>
-                                            sender: {message.sender}<br/>,
-                                            my id: {id}<br/>
                                             {message.text}
                                         </div>
                                     </div>
                                 ))}
+                                <div ref={divUnderMessages}></div>
                             </div>
                         </div>    
                     )}
